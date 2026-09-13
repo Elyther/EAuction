@@ -1,0 +1,58 @@
+# ================= EYITLE SMP COMBAT SYSTEM (DÜZƏLDİLMİŞ) =================
+
+options:
+    prefix: &8[&c&l⚔&8]
+    sure: 15 # Dövüş süresi
+
+# --- DÖYÜŞ BAŞLAMA MANTIĞI ---
+on damage:
+    if attacker is a player:
+        if victim is a player:
+            # ÖZ-ÖZÜNÜ VURURSA (ENDER PEARL, OK VS.) SİSTEMİ DURDUR
+            if attacker is victim:
+                stop
+            
+            # Döyüş mesajları
+            if {combat.sure::%attacker%} is not set:
+                send "{@prefix} &7Dövüş başladı! &c%{@sure}% saniye &7boyunca çıkış yapma!" to attacker
+            if {combat.sure::%victim%} is not set:
+                send "{@prefix} &7Dövüş başladı! &c%{@sure}% saniye &7boyunca çıkış yapma!" to victim
+            
+            # Süreleri güncelle
+            set {combat.sure::%attacker%} to {@sure}
+            set {combat.sure::%victim%} to {@sure}
+
+# --- GERİ SAYIM VE BİLDİRİŞ ---
+every 1 second:
+    loop all players:
+        if {combat.sure::%loop-player%} is set:
+            if {combat.sure::%loop-player%} > 0:
+                remove 1 from {combat.sure::%loop-player%}
+                # Mavi ve Qalın Action Bar bildirişi
+                send action bar "&bSavaş: &e%{combat.sure::%loop-player%}% " to loop-player
+            else:
+                delete {combat.sure::%loop-player%}
+                send "{@prefix} &aArtık güvendesin, dövüş süresi bitti." to loop-player
+
+# --- OYUNDAN ÇIXMA CEZASI ---
+on quit:
+    if {combat.sure::%player%} is set:
+        kill player
+        broadcast "{@prefix} &e%player% &7dövüşten kaçtığı için infaz edildi!"
+        delete {combat.sure::%player%}
+
+# --- KOMANDA MƏHDUDİYYƏTİ ---
+on command:
+    if {combat.sure::%player%} is set:
+        # İzin verilen komutlar
+        if command is "shop" or "sat" or "order" or "msg" or "w" or "tell" or "shop":
+            stop
+        else:
+            cancel event
+            send "{@prefix} &cDövüş sırasında bu komutu kullanamazsın!" to player
+            send "{@prefix} &7İzin verilenler: &f/shop, /shop, /sat, /msg" to player
+
+# --- ÖLƏNDƏ SIFIRLA ---
+on death of player:
+    if {combat.sure::%victim%} is set:
+        delete {combat.sure::%victim%}
